@@ -1437,6 +1437,77 @@ non-nil, the one above is used."
 	       (if above min max))))))
 
 ;;;###autoload
+(defun org-table-max-line-col ()
+  "Return the maximum line and column of the current table as a
+list of two numbers"
+  (when (not (org-at-table-p))
+    (user-error "Not in an org-table"))
+  (let ((table-end (org-table-end)))
+    (save-mark-and-excursion
+     (goto-char table-end)
+     (org-table-previous-field)
+     (list (org-table-current-line) (org-table-current-column)))))
+
+;;;###autoload
+(defun org-table-swap-cells (row1 col1 row2 col2)
+  "Swap two cells indicated by the coordinates provided"
+  (let ((content1 (org-table-get row1 col1))
+	(content2 (org-table-get row2 col2)))
+    (org-table-put row1 col1 content2)
+    (org-table-put row2 col2 content1)
+    (org-table-align)))
+
+;;;###autoload
+(defun org-table-move-single-cell (direction)
+  "Move the current cell in a cardinal direction according to the
+parameter symbol: 'up 'down 'left 'right. Swaps contents of
+adjacent cell with current one."
+  (unless (org-at-table-p)
+    (error "No table at point"))
+  (let ((drow 0) (dcol 0))
+    (cond ((equal direction 'up)    (setq drow -1))
+	  ((equal direction 'down)  (setq drow +1))
+	  ((equal direction 'left)  (setq dcol -1))
+	  ((equal direction 'right) (setq dcol +1))
+	  (t (error "Not a valid direction, must be one of 'up 'down 'left 'right")))
+    (let* ((row1 (org-table-current-line))
+	   (col1 (org-table-current-column))
+	   (row2 (+ row1 drow))
+	   (col2 (+ col1 dcol))
+	   (max-row-col (org-table-max-line-col))
+	   (max-row (car max-row-col))
+	   (max-col (cadr max-row-col)))
+      (when (or (< col1 1) (< col2 1) (> col2 max-col) (< row2 1) (> row2 max-row))
+	(user-error "Cannot move cell further"))
+      (org-table-swap-cells row1 col1 row2 col2)
+      (org-table-goto-line row2)
+      (org-table-goto-column col2))))
+
+;;;###autoload
+(defun org-table-move-single-cell-up ()
+  "Move a single cell up in a table; swap with anything in target cell"
+  (interactive)
+  (org-table-move-single-cell 'up))
+
+;;;###autoload
+(defun org-table-move-single-cell-down ()
+  "Move a single cell down in a table; swap with anything in target cell"
+  (interactive)
+  (org-table-move-single-cell 'down))
+
+;;;###autoload
+(defun org-table-move-single-cell-left ()
+  "Move a single cell left in a table; swap with anything in target cell"
+  (interactive)
+  (org-table-move-single-cell 'left))
+
+;;;###autoload
+(defun org-table-move-single-cell-right ()
+  "Move a single cell right in a table; swap with anything in target cell"
+  (interactive)
+  (org-table-move-single-cell 'right))
+	
+;;;###autoload
 (defun org-table-delete-column ()
   "Delete a column from the table."
   (interactive)

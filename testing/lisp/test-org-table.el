@@ -2102,6 +2102,391 @@ is t, then new columns should be added as needed"
 
 
 
+;;; Moving single cells
+(ert-deftest test-org-table/move-single-cell-down ()
+  "Test `org-table-move-single-cell-down' specifications."
+  ;; Error out when cell cannot be moved due to not in table,
+  ;; in the last row of the table, or is on a hline
+  (should-error
+   (org-test-with-temp-text "not in\na table\n"
+     (org-table-move-single-cell-down)))
+  (should-error
+   (org-test-with-temp-text "| a |"
+     (org-table-move-single-cell-down)))
+  (should-error
+   (org-test-with-temp-text "| a |\n"
+     (org-table-move-single-cell-down)))
+  (should-error
+   (org-test-with-temp-text "| a | <point>b |\n"
+     (org-table-move-single-cell-down)))
+  (should-error
+   (org-test-with-temp-text "| a | b |\n| <point>c | d |\n"
+     (org-table-move-single-cell-down)))
+  (should-error
+   (org-test-with-temp-text "| a | b |\n| c | <point>d |\n"
+     (org-table-move-single-cell-down)))
+  (should-error
+   (org-test-with-temp-text "| <point>a |\n|---|\n"
+     (org-table-move-single-cell-down)))
+  (should-error
+   (org-test-with-temp-text "|<point>---|\n| a |\n"
+     (org-table-move-single-cell-down)))
+  ;; Check for correct cell movement
+  (should (equal (concat "| c | b |\n"
+			 "| a | d |\n"
+			 "| e | f |\n")
+		 (org-test-with-temp-text
+		     (concat "| <point>a | b |\n"
+			     "| c | d |\n"
+			     "| e | f |\n")
+		   (org-table-move-single-cell-down)
+		   (buffer-string))))
+  (should (equal (concat "| a | d |\n"
+			 "| c | b |\n"
+			 "| e | f |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | <point>b |\n"
+			     "| c | d |\n"
+			     "| e | f |\n")
+		   (org-table-move-single-cell-down)
+		   (buffer-string))))
+  (should (equal (concat "| a | b |\n"
+			 "| e | d |\n"
+			 "| c | f |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | b |\n"
+			     "| <point>c | d |\n"
+			     "| e | f |\n")
+		   (org-table-move-single-cell-down)
+		   (buffer-string))))
+  (should (equal (concat "| a | d |\n"
+			 "| c | f |\n"
+			 "| e | b |\n")
+		 (org-test-with-temp-text
+		     (concat "| a |<point> b |\n"
+			     "| c | d |\n"
+			     "| e | f |\n")
+		   (org-table-move-single-cell-down)
+		   (org-table-move-single-cell-down)
+		   (buffer-string))))
+  ;; Check for correct handling of hlines which should not change
+  ;; position on single cell moves
+  (should (equal (concat "| c | b |\n"
+			 "|---+---|\n"
+			 "| a | d |\n"
+			 "| e | f |\n")
+		 (org-test-with-temp-text
+		     (concat "| <point>a | b |\n"
+			     "|---+---|\n"
+			     "| c | d |\n"
+			     "| e | f |\n")
+		   (org-table-move-single-cell-down)
+		   (buffer-string))))
+  (should (equal (concat "| a | d |\n"
+			 "|---+---|\n"
+			 "| c | f |\n"
+			 "| e | b |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | <point>b |\n"
+			     "|---+---|\n"
+			     "| c | d |\n"
+			     "| e | f |\n")
+		   (org-table-move-single-cell-down)
+		   (org-table-move-single-cell-down)
+		   (buffer-string))))
+  (should (equal (concat "| a | b |\n"
+			 "|---+---|\n"
+			 "| c | f |\n"
+			 "| e | d |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | b |\n"
+			     "|---+---|\n"
+			     "| c | <point>d |\n"
+			     "| e | f |\n")
+		   (org-table-move-single-cell-down)
+		   (buffer-string))))
+
+  ;; Move single cell even without a final newline. Seems that some
+  (should (equal (concat "| a | d |\n"
+			 "|---+---|\n"
+			 "| c | f |\n"
+			 "| e | b |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | <point>b |\n"
+			     "|---+---|\n"
+			     "| c | d |\n"
+			     "| e | f |")
+		   (org-table-move-single-cell-down)
+		   (org-table-move-single-cell-down)
+		   (buffer-string)))))
+(ert-deftest test-org-table/move-single-cell-up ()
+  "Test `org-table-move-single-cell-up' specifications."
+  ;; Error out when cell cannot be moved due to not in table,
+  ;; in the last row of the table, or is on a hline
+  (should-error
+   (org-test-with-temp-text "not in\na table\n"
+     (org-table-move-single-cell-up)))
+  (should-error
+   (org-test-with-temp-text "| a |"
+     (org-table-move-single-cell-up)))
+  (should-error
+   (org-test-with-temp-text "| a |\n"
+     (org-table-move-single-cell-up)))
+  (should-error
+   (org-test-with-temp-text "| <point>a | b |\n"
+     (org-table-move-single-cell-up)))
+  (should-error
+   (org-test-with-temp-text "| a | <point>b |\n| c | d |\n"
+     (org-table-move-single-cell-up)))
+  (should-error
+   (org-test-with-temp-text "| <point>a |\n|---|\n"
+     (org-table-move-single-cell-up)))
+  (should-error
+   (org-test-with-temp-text "|<point>---|\n| a |\n"
+     (org-table-move-single-cell-up)))
+  ;; Check for correct cell movement
+  (should (equal (concat "| c | b |\n"
+			 "| a | d |\n"
+			 "| e | f |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | b |\n"
+			     "| <point>c | d |\n"
+			     "| e | f |\n")
+		   (org-table-move-single-cell-up)
+		   (buffer-string))))
+  (should (equal (concat "| a | d |\n"
+			 "| c | b |\n"
+			 "| e | f |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | b |\n"
+			     "| c | <point>d |\n"
+			     "| e | f |\n")
+		   (org-table-move-single-cell-up)
+		   (buffer-string))))
+  (should (equal (concat "| a | b |\n"
+			 "| e | d |\n"
+			 "| c | f |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | b |\n"
+			     "| c | d |\n"
+			     "| <point>e | f |\n")
+		   (org-table-move-single-cell-up)
+		   (buffer-string))))
+  (should (equal (concat "| a | f |\n"
+			 "| c | b |\n"
+			 "| e | d |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | b |\n"
+			     "| c | d |\n"
+			     "| e |<point> f |\n")
+		   (org-table-move-single-cell-up)
+		   (org-table-move-single-cell-up)
+		   (buffer-string))))
+  ;; Check for correct handling of hlines which should not change
+  ;; position on single cell moves
+  (should (equal (concat "| c | b |\n"
+			 "|---+---|\n"
+			 "| a | d |\n"
+			 "| e | f |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | b |\n"
+			     "|---+---|\n"
+			     "| <point>c | d |\n"
+			     "| e | f |\n")
+		   (org-table-move-single-cell-up)
+		   (buffer-string))))
+  (should (equal (concat "| a | f |\n"
+			 "|---+---|\n"
+			 "| c | b |\n"
+			 "| e | d |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | b |\n"
+			     "|---+---|\n"
+			     "| c | d |\n"
+			     "| e | <point>f |\n")
+		   (org-table-move-single-cell-up)
+		   (org-table-move-single-cell-up)
+		   (buffer-string))))
+  (should (equal (concat "| a | b |\n"
+			 "|---+---|\n"
+			 "| c | f |\n"
+			 "| e | d |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | b |\n"
+			     "|---+---|\n"
+			     "| c | d |\n"
+			     "| e | <point>f |\n")
+		   (org-table-move-single-cell-up)
+		   (buffer-string))))
+
+  ;; Move single cell even without a final newline. Seems that some
+  (should (equal (concat "| a | f |\n"
+			 "|---+---|\n"
+			 "| c | b |\n"
+			 "| e | d |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | b |\n"
+			     "|---+---|\n"
+			     "| c | d |\n"
+			     "| e | <point>f |")
+		   (org-table-move-single-cell-up)
+		   (org-table-move-single-cell-up)
+		   (buffer-string)))))
+(ert-deftest test-org-table/move-single-cell-right ()
+  "Test `org-table-move-single-cell-right' specifications."
+  ;; Error out when cell cannot be moved due to not in table,
+  ;; in the last col of the table, or is on a hline
+  (should-error
+   (org-test-with-temp-text "not in\na table\n"
+     (org-table-move-single-cell-right)))
+  (should-error
+   (org-test-with-temp-text "| a |"
+     (org-table-move-single-cell-right)))
+  (should-error
+   (org-test-with-temp-text "| a |\n"
+     (org-table-move-single-cell-right)))
+  (should-error
+   (org-test-with-temp-text "| <point>a |\n| b |\n"
+     (org-table-move-single-cell-right)))
+  (should-error
+   (org-test-with-temp-text "| a | <point>b |\n| c | d |\n"
+     (org-table-move-single-cell-right)))
+  (should-error
+   (org-test-with-temp-text "| <point>a |\n|---|\n"
+     (org-table-move-single-cell-right)))
+  (should-error
+   (org-test-with-temp-text "|<point>---|\n| a |\n"
+     (org-table-move-single-cell-right)))
+  ;; Check for correct cell movement
+  (should (equal (concat "| b | a | c |\n"
+			 "| d | e | f |\n")
+		 (org-test-with-temp-text
+		     (concat "| <point>a | b | c |\n"
+			     "| d | e | f |\n")
+		   (org-table-move-single-cell-right)
+		   (buffer-string))))
+  (should (equal (concat "| b | c | a |\n"
+			 "| d | e | f |\n")
+		 (org-test-with-temp-text
+		     (concat "| <point>a | b | c |\n"
+			     "| d | e | f |\n")
+		   (org-table-move-single-cell-right)
+		   (org-table-move-single-cell-right)
+		   (buffer-string))))
+  (should (equal (concat "| a | b | c |\n"
+			 "| e | f | d |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | b | c |\n"
+			     "| <point> d | e | f |\n")
+		   (org-table-move-single-cell-right)
+		   (org-table-move-single-cell-right)
+		   (buffer-string))))
+  (should (equal (concat "| a | b | c |\n"
+			 "| d | f | e |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | b | c |\n"
+			     "| d | <point>e | f |\n")
+		   (org-table-move-single-cell-right)
+		   (buffer-string))))
+  (should (equal (concat "| a | b | c |\n"
+			 "|---+---+---|\n"
+			 "| e | f | d |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | b | c |\n"
+			     "|---+---+---|\n"
+			     "| <point>d | e | f |\n")
+		   (org-table-move-single-cell-right)
+		   (org-table-move-single-cell-right)
+		   (buffer-string))))
+  ;; Move single cell even without a final newline. Seems that some
+  (should (equal (concat "| a | b | c |\n"
+			 "|---+---+---|\n"
+			 "| e | d | f |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | b | c |\n"
+			     "|---+---+---|\n"
+			     "| <point>d | e | f |")
+		   (org-table-move-single-cell-right)
+		   (buffer-string)))))
+(ert-deftest test-org-table/move-single-cell-left ()
+  "Test `org-table-move-single-cell-left' specifications."
+  ;; Error out when cell cannot be moved due to not in table,
+  ;; in the last col of the table, or is on a hline
+  (should-error
+   (org-test-with-temp-text "not in\na table\n"
+     (org-table-move-single-cell-left)))
+  (should-error
+   (org-test-with-temp-text "| a |"
+     (org-table-move-single-cell-left)))
+  (should-error
+   (org-test-with-temp-text "| a |\n"
+     (org-table-move-single-cell-left)))
+  (should-error
+   (org-test-with-temp-text "| <point>a |\n| b |\n"
+     (org-table-move-single-cell-left)))
+  (should-error
+   (org-test-with-temp-text "| <point>a | b |\n| c | d |\n"
+     (org-table-move-single-cell-left)))
+  (should-error
+   (org-test-with-temp-text "| <point>a |\n|---|\n"
+     (org-table-move-single-cell-left)))
+  (should-error
+   (org-test-with-temp-text "|<point>---|\n| a |\n"
+     (org-table-move-single-cell-left)))
+  ;; Check for correct cell movement
+  (should (equal (concat "| b | a | c |\n"
+			 "| d | e | f |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | <point>b | c |\n"
+			     "| d | e | f |\n")
+		   (org-table-move-single-cell-left)
+		   (buffer-string))))
+  (should (equal (concat "| c | a | b |\n"
+			 "| d | e | f |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | b | <point>c |\n"
+			     "| d | e | f |\n")
+		   (org-table-move-single-cell-left)
+		   (org-table-move-single-cell-left)
+		   (buffer-string))))
+  (should (equal (concat "| a | b | c |\n"
+			 "| f | d | e |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | b | c |\n"
+			     "| d | e | <point>f |\n")
+		   (org-table-move-single-cell-left)
+		   (org-table-move-single-cell-left)
+		   (buffer-string))))
+  (should (equal (concat "| a | b | c |\n"
+			 "| d | f | e |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | b | c |\n"
+			     "| d | e | <point>f |\n")
+		   (org-table-move-single-cell-left)
+		   (buffer-string))))
+  (should (equal (concat "| a | b | c |\n"
+			 "|---+---+---|\n"
+			 "| f | d | e |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | b | c |\n"
+			     "|---+---+---|\n"
+			     "| d | e | <point>f |\n")
+		   (org-table-move-single-cell-left)
+		   (org-table-move-single-cell-left)
+		   (buffer-string))))
+  ;; Move single cell even without a final newline. Seems that some
+  (should (equal (concat "| a | b | c |\n"
+			 "|---+---+---|\n"
+			 "| e | d | f |\n")
+		 (org-test-with-temp-text
+		     (concat "| a | b | c |\n"
+			     "|---+---+---|\n"
+			     "| d | <point>e | f |")
+		   (org-table-move-single-cell-left)
+		   (buffer-string))))
+  )
+
+
 ;;; Moving rows, moving columns
 
 (ert-deftest test-org-table/move-row-down ()
