@@ -4700,7 +4700,9 @@ Otherwise, these types are allowed:
   :group 'org-sparse-trees)
 
 (defun org-cycle-hide-archived-subtrees (state)
-  "Re-hide all archived subtrees after a visibility state change."
+  "Re-hide all archived subtrees after a visibility state change.
+STATE should be one of the symbols listed in the docstring of
+`org-cycle-hook'."
   (when (and (not org-cycle-open-archived-trees)
              (not (memq state '(overview folded))))
     (save-excursion
@@ -6642,17 +6644,13 @@ and subscripts."
 			       (nth (if table-p 3 1) org-script-display)
 			     (nth (if table-p 2 0) org-script-display)))
 	(add-text-properties (match-beginning 2) (match-end 2)
-			     (list 'invisible t
-				   'org-dwidth t 'org-dwidth-n 1))
-	(if (and (eq (char-after (match-beginning 3)) ?{)
-		 (eq (char-before (match-end 3)) ?}))
-	    (progn
-	      (add-text-properties
-	       (match-beginning 3) (1+ (match-beginning 3))
-	       (list 'invisible t 'org-dwidth t 'org-dwidth-n 1))
-	      (add-text-properties
-	       (1- (match-end 3)) (match-end 3)
-	       (list 'invisible t 'org-dwidth t 'org-dwidth-n 1)))))
+			     (list 'invisible t))
+	(when (and (eq (char-after (match-beginning 3)) ?{)
+		   (eq (char-before (match-end 3)) ?}))
+	  (add-text-properties (match-beginning 3) (1+ (match-beginning 3))
+			       (list 'invisible t))
+	  (add-text-properties (1- (match-end 3)) (match-end 3)
+			       (list 'invisible t))))
       t)))
 
 ;;;; Visibility cycling, including org-goto and indirect buffer
@@ -7214,12 +7212,13 @@ open and agenda-wise Org files."
 
 (defun org-cycle-hide-drawers (state &optional exceptions)
   "Re-hide all drawers after a visibility state change.
-When non-nil, optional argument EXCEPTIONS is a list of strings
-specifying which drawers should not be hidden."
+STATE should be one of the symbols listed in the docstring of
+`org-cycle-hook'.  When non-nil, optional argument EXCEPTIONS is
+a list of strings specifying which drawers should not be hidden."
   (when (and (derived-mode-p 'org-mode)
 	     (not (memq state '(overview folded contents))))
     (save-excursion
-      (let* ((globalp (memq state '(contents all)))
+      (let* ((globalp (eq state 'all))
              (beg (if globalp (point-min) (point)))
              (end (if globalp (point-max)
 		    (if (eq state 'children)
@@ -15204,7 +15203,7 @@ Returns the new tags string, or nil to not change the current settings."
       (setq rtn
 	    (catch 'exit
 	      (while t
-		(message "[a-z..]:Toggle [SPC]:clear [RET]:accept [TAB]:free [!] %sgroups%s"
+		(message "[a-z..]:toggle [SPC]:clear [RET]:accept [TAB]:edit [!] %sgroups%s"
 			 (if (not groups) "no " "")
 			 (if expert " [C-c]:window" (if exit-after-next " [C-c]:single" " [C-c]:multi")))
 		(setq c (let ((inhibit-quit t)) (read-char-exclusive)))
@@ -17303,24 +17302,19 @@ The command returns the inserted time stamp."
 (defun org-display-custom-time (beg end)
   "Overlay modified time stamp format over timestamp between BEG and END."
   (let* ((ts (buffer-substring beg end))
-	 t1 w1 with-hm tf time str w2 (off 0))
+	 t1 with-hm tf time str (off 0))
     (save-match-data
       (setq t1 (org-parse-time-string ts t))
       (when (string-match "\\(-[0-9]+:[0-9]+\\)?\\( [.+]?\\+[0-9]+[hdwmy]\\(/[0-9]+[hdwmy]\\)?\\)?\\'" ts)
 	(setq off (- (match-end 0) (match-beginning 0)))))
     (setq end (- end off))
-    (setq w1 (- end beg)
-	  with-hm (and (nth 1 t1) (nth 2 t1))
+    (setq with-hm (and (nth 1 t1) (nth 2 t1))
 	  tf (funcall (if with-hm 'cdr 'car) org-time-stamp-custom-formats)
 	  time (org-fix-decoded-time t1)
 	  str (org-add-props
 		  (format-time-string
 		   (substring tf 1 -1) (apply 'encode-time time))
-		  nil 'mouse-face 'highlight)
-	  w2 (length str))
-    (unless (= w2 w1)
-      (add-text-properties (1+ beg) (+ 2 beg)
-			   (list 'org-dwidth t 'org-dwidth-n (- w1 w2))))
+		  nil 'mouse-face 'highlight))
     (put-text-property beg end 'display str)))
 
 (defun org-fix-decoded-time (time)
@@ -21819,30 +21813,6 @@ If DELETE is non-nil, delete all those overlays."
   (interactive "p")
   (self-insert-command N))
 
-(defun org-string-width (s)
-  "Compute width of string, ignoring invisible characters.
-This ignores character with invisibility property `org-link', and also
-characters with property `org-cwidth', because these will become invisible
-upon the next fontification round."
-  (let (b l)
-    (when (or (eq t buffer-invisibility-spec)
-	      (assq 'org-link buffer-invisibility-spec))
-      (while (setq b (text-property-any 0 (length s)
-					'invisible 'org-link s))
-	(setq s (concat (substring s 0 b)
-			(substring s (or (next-single-property-change
-					  b 'invisible s)
-                                         (length s)))))))
-    (while (setq b (text-property-any 0 (length s) 'org-cwidth t s))
-      (setq s (concat (substring s 0 b)
-		      (substring s (or (next-single-property-change
-					b 'org-cwidth s)
-                                       (length s))))))
-    (setq l (string-width s) b -1)
-    (while (setq b (text-property-any (1+ b) (length s) 'org-dwidth t s))
-      (setq l (- l (get-text-property b 'org-dwidth-n s))))
-    l))
-
 (defun org-shorten-string (s maxlength)
   "Shorten string S so that it is no longer than MAXLENGTH characters.
 If the string is shorter or has length MAXLENGTH, just return the
@@ -21994,29 +21964,6 @@ The return value is a list of lines, without newlines at the end."
 	(setq line (concat line " " (pop words))))
       (setq lines (push line lines)))
     (nreverse lines)))
-
-(defun org-split-string (string &optional separators)
-  "Splits STRING into substrings at SEPARATORS.
-SEPARATORS is a regular expression.
-No empty strings are returned if there are matches at the beginning
-and end of string."
-  ;; FIXME: why not use (split-string STRING SEPARATORS t)?
-  (let ((start 0) notfirst list)
-    (while (and (string-match (or separators "[ \f\t\n\r\v]+") string
-			      (if (and notfirst
-				       (= start (match-beginning 0))
-				       (< start (length string)))
-				  (1+ start) start))
-		(< (match-beginning 0) (length string)))
-      (setq notfirst t)
-      (or (eq (match-beginning 0) 0)
-	  (and (eq (match-beginning 0) (match-end 0))
-	       (eq (match-beginning 0) start))
-	  (push (substring string start (match-beginning 0)) list))
-      (setq start (match-end 0)))
-    (or (eq start (length string))
-	(push (substring string start) list))
-    (nreverse list)))
 
 (defun org-quote-vert (s)
   "Replace \"|\" with \"\\vert\"."

@@ -351,7 +351,7 @@ The function should return the string to be exported."
 
 ;;;; Compilation
 
-(defcustom org-texinfo-info-process '("makeinfo %f")
+(defcustom org-texinfo-info-process '("makeinfo --no-split %f")
   "Commands to process a Texinfo file to an INFO file.
 
 This is a list of strings, each of them will be given to the
@@ -361,6 +361,8 @@ base name (i.e. without directory and extension parts), %o by the
 base directory of the file and %O by the absolute file name of
 the output file."
   :group 'org-export-texinfo
+  :version "26.1"
+  :package-version '(Org . "9.1")
   :type '(repeat :tag "Shell command sequence"
 		 (string :tag "Shell command")))
 
@@ -877,7 +879,8 @@ holding contextual information."
 	      (funcall (plist-get info :texinfo-format-headline-function)
 		       todo todo-type priority text tags))
 	     (contents
-	      (concat (if (org-string-nw-p contents)
+	      (concat "\n"
+		      (if (org-string-nw-p contents)
 			  (concat "\n" contents)
 			"")
 		      (let ((index (org-element-property :INDEX headline)))
@@ -1216,7 +1219,7 @@ holding contextual information."
 	       (cl-remove-if
 		(lambda (h)
 		  (org-not-nil (org-export-get-node-property :COPYING h t)))
-		(org-export-collect-headlines info nil scope))
+		(org-export-collect-headlines info 1 scope))
 	       cache))))
 
 ;;;; Node Property
