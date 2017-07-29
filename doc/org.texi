@@ -2156,6 +2156,12 @@ NEWLINE, so it can be used to split a table.
 Move to beginning of the current table field, or on to the previous field.
 @orgcmd{M-e,org-table-end-of-field}
 Move to end of the current table field, or on to the next field.
+@c
+@orgcmd{S-@key{up},org-table-move-single-cell-up}
+@orgcmd{S-@key{down},org-table-move-single-cell-down}
+@orgcmd{S-@key{left},org-table-move-single-cell-left}
+@orgcmd{S-@key{right},org-table-move-single-cell-right}
+Move single cells up, down, left, and right by swapping with adjacent cells.
 
 @tsubheading{Column and row editing}
 @orgcmdkkcc{M-@key{left},M-@key{right},org-table-move-column-left,org-table-move-column-right}
