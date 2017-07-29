@@ -291,6 +291,11 @@ This variable allow computed durations in tables to be zero-padded.
 *** New mode switch for table formulas : =U=
 This mode omits seconds in durations.
 
+*** New single table cell movement options : ~org-table-move-single-cell-up~
+Shift-Up, Shift-Down, Shift-Right, and Shift-Left now move single
+table cells in the corresponding directions by swapping with the
+adjacent cell.
+
 ** Removed functions
 
 *** Org Timeline
@@ -367,6 +372,21 @@ It is the reciprocal of ~org-list-to-lisp~, which see.
 *** ~org-agenda-set-restriction-lock-from-agenda~
 
 Call ~org-agenda-set-restriction-lock~ from the agenda.
+
+*** ~org-table-move-single-cell~ and related
+
+Four new user functions to move single table cells in cardinal
+directions.
+
+- ~org-table-move-single-cell-up~
+- ~org-table-move-single-cell-down~
+- ~org-table-move-single-cell-left~
+- ~org-table-move-single-cell-right~
+
+Support functions which are used to facilitate single cell movement.
+- ~org-table-move-single-cell~ 
+- ~org-table-swap-cells~ 
+- ~org-table-max-line-col~
 
 ** Miscellaneous
 
